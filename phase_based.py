@@ -681,7 +681,7 @@ def phaseBasedMagnify(vidFname, vidFnameOut, maxFrames, windowSize, factor, lowF
 if __name__ == "__main__":
 
     #input video path
-    vidFname = 'video_results/auto_original.avi'
+    vidFname = 'video/auto_original.avi'
     # maximum nr of frames to process
     maxFrames = 1000
     # the size of the sliding window

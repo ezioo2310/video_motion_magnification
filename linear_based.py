@@ -190,7 +190,7 @@ if __name__=="__main__":
     #magnify_color("baby.mp4",0.4,3)
 
     #input video path
-    vidFname = "video_results/auto_original.avi"
+    vidFname = "video/auto_original.avi"
     # the amplification factor
     factor = 20
     # low ideal filter
