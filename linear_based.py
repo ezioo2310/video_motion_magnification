@@ -54,7 +54,7 @@ def load_video(video_filename, RGB = True):
     width, height = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    video_tensor=np.zeros((frame_count,height,width,3) if RGB else (frame_count, height, width), dtype='float')
+    video_tensor=np.zeros((frame_count,height,width,3) if RGB else (frame_count, height, width), dtype='int16')
     x=0
 
     while cap.isOpened():
@@ -133,9 +133,9 @@ def laplacian_video(video_tensor,levels=3, rgb = True):
         if i==0:
             for k in range(levels):
                 if rgb:
-                    tensor_list.append(np.zeros((video_tensor.shape[0],pyr[k].shape[0],pyr[k].shape[1],3)))
+                    tensor_list.append(np.zeros((video_tensor.shape[0],pyr[k].shape[0],pyr[k].shape[1],3), dtype='int16'))
                 else:
-                    tensor_list.append(np.zeros((video_tensor.shape[0],pyr[k].shape[0],pyr[k].shape[1])))
+                    tensor_list.append(np.zeros((video_tensor.shape[0],pyr[k].shape[0],pyr[k].shape[1]), dtype='int16'))
         for n in range(levels):
             tensor_list[n][i] = pyr[n]
     return tensor_list
@@ -151,11 +151,11 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
 
 #reconstract video from laplacian pyramid
 def reconstract_from_tensorlist(filter_tensor_list,levels=3):
-    final=np.zeros(filter_tensor_list[-1].shape)
+    final=np.zeros(filter_tensor_list[-1].shape, dtype='int16')
     for i in range(filter_tensor_list[0].shape[0]):
         up = filter_tensor_list[0][i]
         for n in range(levels-1):
-            up=cv2.pyrUp(up)+filter_tensor_list[n + 1][i]#可以改为up=cv2.pyrUp(up)
+            up=cv2.pyrUp(up)+filter_tensor_list[n + 1][i]
         final[i]=up
     return final
 
@@ -171,6 +171,7 @@ def magnify_motion(video_name, video_name_output, low,high,filt = 'butter',level
 
     t, f = load_video(video_name, RGB = rgb)
     lap_video_list=laplacian_video(t,levels=levels, rgb = rgb)
+
     filter_tensor_list=[]
     for i in range(levels):
         if filt == 'butter':
@@ -180,10 +181,9 @@ def magnify_motion(video_name, video_name_output, low,high,filt = 'butter',level
         else:
             raise Exception('If you want to use that filter, YOU code it!')
         filter_tensor*=amplification
-        filter_tensor_list.append(filter_tensor)
+        filter_tensor_list.append(filter_tensor.astype('int16'))
     recon=reconstract_from_tensorlist(filter_tensor_list, levels=levels)
     final=t+recon
-
     save_video(final, video_name_output, fps = f, RGB = rgb)
 
 if __name__=="__main__":
@@ -194,12 +194,12 @@ if __name__=="__main__":
     # the amplification factor
     factor = 20
     # low ideal filter
-    lowFreq = 30
+    lowFreq = 10
     # high ideal filter
-    highFreq = 42
+    highFreq = 20
     # set the number of layers in laplacian pyramid
     levels = 3
-    # set the type of filter used. Choices are 'butter' or 'ideal' 
+    # set the type of filter used. Choices are 'butter' or 'ideal'
     filt = 'butter'
     # set the flag for using colored images. True -> colored, False -> grayscale
     rgb = False
