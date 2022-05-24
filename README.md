@@ -63,21 +63,27 @@ def forward(self, input: Tensor) -> Tensor:
     return F.interpolate(input, self.size, self.scale_factor, self.mode, self.align_corners,
                          #recompute_scale_factor=self.recompute_scale_factor
                          )
-```
+``` 
 
 #### analyze.py
 This script can be used both for pre-processing/analyzing and post-processing/analyzing.
 All functions from utility.py are imported and used in step-by-step fashion.
 
 *Preprocessing*:
-Since motion magnification scripts are memory demanding, the best use of this script is to load the video, covert it to grayscale, choose Region of Interest(ROI) and 
+Since motion magnification scripts are memory demanding, the best use of this script is to load the video, convert it to grayscale, choose Region of Interest(ROI) and 
 extract the ROI footage.
 
 *Postprocessing*:
 Plot FFT and amplitude of pixel values. Additionally, ROI can be chosen to specifically show this plots for that region.
 
+#### analyze.ipynb
+Jupyter-notebook version of the analyze.py with the addition of having also an option to visualise optical flow.
+I recommend using this notebook for the convinience.
+
+NOTE: if not already installed, `pip install jupyter` must be used.
+
 #### utility.py
 Contains useful functions that can be used for preprocessing, analyzing, plotting, drawing and testing.
 
 ## Issues and constraints
-These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop it using analyze.py. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
+These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop them using analyze.py. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 

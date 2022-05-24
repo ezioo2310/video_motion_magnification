@@ -59,7 +59,7 @@ def plot_pyramid(image, pyramid_levels, pyramid = 'laplacian'):
     Plotting the pyramid of the image. Since the values of the pixels are low when making a pyramid,
     histogram equalization is applied to make it more visable on top of the original image.
     """
-    if isinstance(image[0][0].item(),int):
+    if isinstance(image[0][0].item() if len(image.shape)==2 else image[0][0][0].item(),int):
         image = image/255.0
     if pyramid == 'laplacian':
         pyr = create_laplacian_image_pyramid(image, pyramid_levels)
@@ -76,9 +76,9 @@ def plot_pyramid(image, pyramid_levels, pyramid = 'laplacian'):
         pyplot.xlabel(f"Pyramid Level {i+1}")
         pyr[i] = pyr[i] - np.min(pyr[i])
         if len(pyr[0].shape)==3:
-            img = cv2.cvtColor(pyr[i], cv2.COLOR_BGR2GRAY)
+            img = cv2.cvtColor(pyr[i].astype('float32'), cv2.COLOR_BGR2GRAY)
         else:
-            img = pyr[i]
+            img = pyr[i].astype('float32')
         img *=255
         img = img.astype(np.uint8)
         equ = cv2.equalizeHist(img)
@@ -143,12 +143,63 @@ def show_image(image):
     cv2.imshow('The first frame',image)
     cv2.waitKey()
 
+def show_image_nb(image):
+    pyplot.figure(figsize=(20, 10))
+    if len(image.shape)==2:
+        pyplot.imshow(image,cmap='gray', vmin=0, vmax=255)
+    else:
+        pyplot.imshow(image)
+
 def draw_roi(image, square_coords):
     start_point = (square_coords['y1'],square_coords['x1'])
     end_point = (square_coords['y2'],square_coords['x2'])
     image = cv2.rectangle(image, start_point, end_point, (255, 0, 0), 2)
     cv2.imshow('Region of Interest',image)
     cv2.waitKey()
+
+def draw_roi_nb(image, square_coords):
+    start_point = (square_coords['y1'],square_coords['x1'])
+    end_point = (square_coords['y2'],square_coords['x2'])
+    image_drawn = cv2.rectangle(image.copy(), start_point, end_point, (255, 0, 0), 2)
+    show_image_nb(image_drawn)
+
+def show_optical_flow_roi(video_input, base_point, square_coords, amplitude):
+    cap = cv2.VideoCapture(video_input)
+    ret, first_frame = cap.read()
+    prev_gray = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
+    position_vectors = {'X': [], 'Y': []}
+
+    while(cap.isOpened()):
+        # READING IMAGE BY IMAGE
+        ret, frame = cap.read()
+        if ret is False:
+                break
+        # CONVERTING TO GRAYSCALE
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # CALCULATING FLOW
+        flow = cv2.calcOpticalFlowFarneback(prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        x1, x2, y1, y2 = square_coords['x1'], square_coords['x2'],square_coords['y1'],square_coords['y2']
+        position_vectors['X'].append(np.mean(flow[x1:x2,y1:y2, 0]))
+        position_vectors['Y'].append(np.mean(flow[x1:x2,y1:y2, 1]))
+
+        # DRAWING AN ARROW
+        start_X, start_Y = base_point
+        start_point = base_point
+        end_point = (start_X + int(np.sum(position_vectors['X'][-1:])*amplitude), start_Y + int(np.sum(position_vectors['Y'][-1:])*amplitude))
+        color = (0, 255, 0)
+        thickness = 2
+        image = cv2.arrowedLine(frame, start_point, end_point, color, thickness)
+
+        prev_gray = gray
+
+        # PRESS 'Q' TO EXIT
+        cv2.imshow('arrow', image) 
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 def show_frequencies(vid_data, fps, square_coords = None):
     """
