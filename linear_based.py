@@ -29,8 +29,10 @@ def build_gaussian_pyramid(src,level=3):
     src_c=src.copy()
     height, width = src_c.shape[0:2]
     #we must have the rounded values in order to reconstruct the pyramid
-    assert height % 2**level == 0
-    assert width % 2**level == 0 
+    # assert height % 2**level == 0
+    # assert width % 2**level == 0 
+    if  height % 2**level != 0 or width % 2**level != 0:
+        raise Exception('Height and width MUST be divisible by: 2 to the power of pyramid_levels!!')
     pyramid=[src_c]
     for i in range(level):
         src_c=cv2.pyrDown(src_c)
@@ -160,7 +162,7 @@ def reconstract_from_tensorlist(filter_tensor_list,levels=3):
     return final
 
 #manify motion
-def magnify_motion(video_name, video_name_output, low,high,filt = 'butter',levels=3,amplification=20, rgb = False):
+def magnify_motion(video_name, video_name_output, low, high, filt = 'butter', levels=3, amplification=20, rgb = False):
     """
     low and high specify the corresponding frequencies. 
     filt specifies which temporal filter to use (choices are 'ideal' and 'butter'). 
@@ -171,6 +173,10 @@ def magnify_motion(video_name, video_name_output, low,high,filt = 'butter',level
 
     t, f = load_video(video_name, RGB = rgb)
     lap_video_list=laplacian_video(t,levels=levels, rgb = rgb)
+
+    #checking if the higher frequency is lower than fs/2 
+    if high > f/2:
+        raise Exception('Frequency band must be within 0 and fs/2 !!!')
 
     filter_tensor_list=[]
     for i in range(levels):
@@ -203,7 +209,7 @@ if __name__=="__main__":
     filt = 'butter'
     # set the flag for using colored images. True -> colored, False -> grayscale
     rgb = False
-    # output video path
+    # output video path (always set it to .avi)
     vidFnameOut =  './video_results/auto_linear_based_' + f'{lowFreq}-{highFreq}Hz_{levels}Levels_{factor}Amp_{filt}Filter.avi'
 
     magnify_motion(vidFname, vidFnameOut, lowFreq, highFreq, filt, levels, factor, rgb)

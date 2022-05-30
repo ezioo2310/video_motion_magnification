@@ -12,8 +12,10 @@ from torch import square
 def create_gaussian_image_pyramid(image, pyramid_levels):
     height, width = image.shape[0:2]
     #we must have the rounded values in order to reconstruct the pyramid
-    assert height % 2**pyramid_levels == 0
-    assert width % 2**pyramid_levels == 0
+    # assert height % 2**pyramid_levels == 0
+    # assert width % 2**pyramid_levels == 0
+    if  height % 2**pyramid_levels != 0 or width % 2**pyramid_levels != 0:
+        raise Exception('Height and width MUST be divisible by: 2 to the power of pyramid_levels!!')
     gauss_copy = np.ndarray(shape=image.shape, dtype="float")
     gauss_copy[:] = image
     img_pyramid = [gauss_copy]

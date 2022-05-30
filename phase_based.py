@@ -363,7 +363,7 @@ class IdealFilter (object):
         if self.NFFT is None:
             self.NFFT = data.shape[0]
             self.__set_mask()            
-            
+        import pdb; pdb.set_trace()
         fft = fftpack.fft(data, axis=axis)        
         fft[self.mask] = 0   
         return np.real( fftpack.ifft(fft, axis=axis) )        
@@ -681,10 +681,10 @@ def phaseBasedMagnify(vidFname, vidFnameOut, maxFrames, windowSize, factor, lowF
 if __name__ == "__main__":
 
     #input video path
-    vidFname = 'video/auto_original.avi'
+    vidFname = 'video/baby.mp4'
     # maximum nr of frames to process
     maxFrames = 1000
-    # the size of the sliding window
+    # the size of the sliding window (applying a filter to the last `windowSize` frames)
     windowSize = 30
     # the magnifaction factor
     factor = 20
@@ -692,7 +692,7 @@ if __name__ == "__main__":
     lowFreq = 0.5
     # high ideal filter
     highFreq = 1.5
-    # output video path
+    # output video path (always set it to .avi)
     vidFnameOut = './video_results/baby_phase_based_' + f'{lowFreq}-{highFreq}Hz.avi'
 
     phaseBasedMagnify(vidFname, vidFnameOut, maxFrames, windowSize, factor, lowFreq, highFreq)
