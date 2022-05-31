@@ -84,4 +84,4 @@ def forward(self, input: Tensor) -> Tensor:
 ``` 
 
 ## Issues and constraints
-These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop the Region Of Interest using analyze.py or analyze.ipynb. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
+These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop the Region Of Interest using analyze.ipynb. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
