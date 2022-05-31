@@ -132,6 +132,7 @@ def laplacian_video(video_tensor,levels=3, rgb = True):
     for i in range(0,video_tensor.shape[0]):
         frame=video_tensor[i]
         pyr=build_laplacian_pyramid(frame,levels=levels)
+        import pdb; pdb.set_trace()
         if i==0:
             for k in range(levels):
                 if rgb:
@@ -173,7 +174,6 @@ def magnify_motion(video_name, video_name_output, low, high, filt = 'butter', le
 
     t, f = load_video(video_name, RGB = rgb)
     lap_video_list=laplacian_video(t,levels=levels, rgb = rgb)
-
     #checking if the higher frequency is lower than fs/2 
     if high > f/2:
         raise Exception('Frequency band must be within 0 and fs/2 !!!')
@@ -196,13 +196,13 @@ if __name__=="__main__":
     #magnify_color("baby.mp4",0.4,3)
 
     #input video path
-    vidFname = "video/auto_original.avi"
+    vidFname = "video/baby.mp4"
     # the amplification factor
     factor = 20
     # low ideal filter
-    lowFreq = 10
+    lowFreq = 1
     # high ideal filter
-    highFreq = 20
+    highFreq = 2
     # set the number of layers in laplacian pyramid
     levels = 3
     # set the type of filter used. Choices are 'butter' or 'ideal'

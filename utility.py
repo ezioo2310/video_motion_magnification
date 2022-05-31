@@ -1,4 +1,5 @@
 # TO BE ADDED
+from re import I
 import cv2
 import numpy as np
 import scipy.fftpack
@@ -11,14 +12,14 @@ from torch import square
 ### PYRAMIDS
 def create_gaussian_image_pyramid(image, pyramid_levels):
     height, width = image.shape[0:2]
-    #we must have the rounded values in order to reconstruct the pyramid
-    # assert height % 2**pyramid_levels == 0
-    # assert width % 2**pyramid_levels == 0
+    # we must have the intiger values for dimensions in order to reconstruct the pyramid
     if  height % 2**pyramid_levels != 0 or width % 2**pyramid_levels != 0:
         raise Exception('Height and width MUST be divisible by: 2 to the power of pyramid_levels!!')
-    gauss_copy = np.ndarray(shape=image.shape, dtype="float")
+
+    gauss_copy = np.ndarray(shape=image.shape)
     gauss_copy[:] = image
     img_pyramid = [gauss_copy]
+
     for pyramid_level in range(1, pyramid_levels):
         gauss_copy = cv2.pyrDown(gauss_copy)
         img_pyramid.append(gauss_copy)
@@ -49,13 +50,12 @@ def _create_pyramid(video, pyramid_levels, pyramid_fn):
     # frame_count, height, width, colors = video.shape
     for frame_number, frame in enumerate(video):
         frame_pyramid = pyramid_fn(frame, pyramid_levels)
-
         for pyramid_level, pyramid_sub_frame in enumerate(frame_pyramid):
             if frame_number == 0:
                 vid_pyramid.append(
                     np.zeros((video.shape[0], pyramid_sub_frame.shape[0], pyramid_sub_frame.shape[1], 3),
-                                dtype="float"))
-
+                                dtype="int16") if len(video.shape)==4 else np.zeros((video.shape[0], pyramid_sub_frame.shape[0], pyramid_sub_frame.shape[1]),
+                                dtype="int16"))
             vid_pyramid[pyramid_level][frame_number] = pyramid_sub_frame
 
     return vid_pyramid
@@ -164,12 +164,19 @@ def draw_roi(image, square_coords):
     cv2.waitKey()
 
 def draw_roi_nb(image, square_coords):
+    """
+    Addapted for jupyter notebook. How? It uses matplotlib which plots 
+    in script and does not open a new window.
+    """
     start_point = (square_coords['y1'],square_coords['x1'])
     end_point = (square_coords['y2'],square_coords['x2'])
     image_drawn = cv2.rectangle(image.copy(), start_point, end_point, (255, 0, 0), 2)
     show_image_nb(image_drawn)
 
 def show_optical_flow_roi(video_input, base_point, square_coords, amplitude):
+    """
+    Used in jupyter script. It draws a motion vector calculated for the specific ROI.
+    """
     if os.path.exists(video_input) == False:
         raise Exception('The path to the video does not exist!')
     cap = cv2.VideoCapture(video_input)
@@ -208,6 +215,123 @@ def show_optical_flow_roi(video_input, base_point, square_coords, amplitude):
 
     cap.release()
     cv2.destroyAllWindows()
+
+
+def plot_pyramid_fft(video, fps, pyramid_levels):
+    """ 
+    Plotting fft of different levels of Gaussian pyramid. The idea is to mitigate the noise 
+    and then do fft but this did not show any difference because when we calculate fft, we 
+    average over all the pixels so noise is not noticable anymore.
+    """
+    pyr = create_gaussian_video_pyramid(video, pyramid_levels)
+    charts_x = 1
+    charts_y = pyramid_levels
+    pyplot.figure('pyramid',figsize=(20, 20))
+    
+    for i in range(pyramid_levels):
+        pyplot.subplot(charts_y, charts_x, i+1)
+        pyplot.xlabel(f"Freq (Hz) of pyramid Level {i+1}")
+        pyplot.title("FFT of the image")
+
+        averages = []
+
+        for x in range(1, pyr[i].shape[0] - 1):
+            averages.append(pyr[i][x, :, :, :].mean() if len(pyr[i][0].shape)==3 else pyr[i][x, :, :].mean())
+        averages = averages
+        averages = averages - min(averages)
+        print(np.max(averages))
+        freqs = scipy.fftpack.fftfreq(len(averages), d=1.0 / fps)
+        fft = abs(scipy.fftpack.fft(averages))
+        idx = np.argsort(freqs)
+
+        freqs = freqs[idx]
+        fft = fft[idx]
+
+        freqs = freqs[len(freqs) // 2 + 1:]
+        fft = fft[len(fft) // 2 + 1:]
+        pyplot.plot(freqs, abs(fft))
+
+    pyplot.show()
+
+
+### FFT grid
+def calc_fft(box, fps):
+    """
+    Calculating fft of the subvideo(a box) passed as argument by averaging/summing over 
+    the brightness values within that box.
+    """
+    averages=[]
+    for x in range(0,box.shape[0]):
+        averages.append(box[x, :, :, :].sum() if len(box[0].shape)==3 else box[x, :, :].sum())       
+    averages = averages
+    averages = averages - min(averages)
+
+    freqs = scipy.fftpack.fftfreq(len(averages), d=1.0 / fps)
+    fft = abs(scipy.fftpack.fft(averages))
+    idx = np.argsort(freqs)
+
+    freqs = freqs[idx]
+    fft = fft[idx]
+
+    freqs = freqs[len(freqs) // 2 + 1:]
+    fft = fft[len(fft) // 2 + 1:]
+
+    return freqs, abs(fft)
+
+def create_grid(video, fps, factor):
+    """
+    Creates a fft grid of factor*factor dimensions.
+    Returns with values normalized between 0 and 1 by simply
+    deviding by maximum value in the grid.
+    """
+    height = video[0].shape[0]
+    width = video[0].shape[1]
+
+    y = np.linspace(0, height, factor+1).astype('int')
+    x = np.linspace(0, width, factor+1).astype('int')
+    
+    for i in range(len(x)-1):
+        for j in range(len(y)-1):
+            # we extract a box (subvideo)
+            box = video[:,y[j]:y[j+1],x[i]:x[i+1]] 
+            
+            # initialize grid 
+            if i==0 and j==0:
+                freqs, pom = calc_fft(box,fps)
+                grid = np.zeros((factor,factor, pom.shape[0]))
+
+            #calculating fft of the box and storing a value in a grid
+            _, pom = calc_fft(box,fps)
+            grid[j,i,:] = pom
+    return  freqs, grid/np.max(grid)
+
+def frequency_grid(grid, freqs, fps, frequency = 10, number_of_pts = 3, vmax = 0.3):
+    """
+    Plotting frequency grid for a certain frequency. We just caclulate the magnitude of fft for 
+    that frequency. We pass it a parameter, then we calculate the resolution of the frequency 
+    (freqs variable contains all the frequencies for which we calculate fft).
+    By choosing number_of_pts, we define the number of points around that frequency over which
+    we average the fft value. We do this because we can never 'perfectly hit' that specific 
+    frequency.
+    vmax is used when we colorize our grid, if it is set to None, it will always scale the colors
+    to match the magnitude so we will always see, e.g. yellow for high magnitudes and that can be 
+    missleading.
+    """
+    resolution = (fps/2)/len(freqs)
+    indices = np.where(np.logical_and(freqs>(frequency - resolution*number_of_pts), freqs<(frequency + resolution*number_of_pts)))[0]
+
+    grid_color = np.zeros(grid.shape[0:2])
+
+    for x in range(grid.shape[0]):
+        for y in range(grid.shape[1]):
+            grid_color[x,y] = grid[x,y,indices].mean()
+    grid_color = np.flip(grid_color, axis = 0)
+
+    pyplot.figure(figsize=(15,9))
+    pyplot.pcolormesh(grid_color, vmin=0.0, vmax=vmax)
+    pyplot.colorbar()
+    pyplot.show()
+
 
 def show_frequencies(vid_data, fps, square_coords = None):
     """
@@ -284,6 +408,9 @@ def show_frequencies(vid_data, fps, square_coords = None):
     pyplot.show()
 
 def extract_roi_video(video, name, fps, square_coords):
+    """
+    Extract and save a ROI as separate video.
+    """
     x1, x2, y1, y2 = square_coords['x1'], square_coords['x2'],square_coords['y1'],square_coords['y2']
     height = x2 - x1
     width = y2 - y1
@@ -447,6 +574,11 @@ def flow_to_color(flow_uv, clip_flow=None, convert_to_bgr=False):
     return flow_uv_to_colors(u, v, convert_to_bgr)
 
 def show_optical_flow_color(video_input, clip_flow=None, convert_to_bgr=False):
+    """
+    Present optical flow in a really cool way. This works fine if we have 'steady' 
+    movement, e.g. a car moving, but since we have vibartions, it is all messy. 
+    But still cool.
+    """
     if os.path.exists(video_input) == False:
         raise Exception('The path to the video does not exist!')
     cap = cv2.VideoCapture(video_input)
@@ -478,6 +610,9 @@ def show_optical_flow_color(video_input, clip_flow=None, convert_to_bgr=False):
 
 ## Approach 2: GRID
 def draw_flow(im, flow, step=50, amp=2):
+    """
+    Drawing motion vector grid over an image.
+    """
     h,w = im.shape[:2]
     y, x = np.mgrid[step/2:h:step, step/2:w:step].reshape(2,-1).astype('int')
     fx, fy = flow[y,x].T
@@ -495,6 +630,9 @@ def draw_flow(im, flow, step=50, amp=2):
     
 
 def show_optical_flow_grid(video_input, step=50, amp=2):
+    """
+    Loading frames and drawing optical flow grid.
+    """
     if os.path.exists(video_input) == False:
         raise Exception('The path to the video does not exist!')
     cap = cv2.VideoCapture(video_input)

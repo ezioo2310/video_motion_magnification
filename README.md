@@ -65,20 +65,16 @@ def forward(self, input: Tensor) -> Tensor:
                          )
 ``` 
 
-#### analyze.py
+#### analyze.ipynb
 This script can be used both for pre-processing/analyzing and post-processing/analyzing.
 All functions from utility.py are imported and used in step-by-step fashion.
 
 *Preprocessing*:
 Since motion magnification scripts are memory demanding, the best use of this script is to load the video, convert it to grayscale, choose Region of Interest(ROI) and 
-extract the ROI footage.
+extract the ROI footage. Show FFT and it's spatial presence within the sequence. Show optical flow.
 
 *Postprocessing*:
-Plot FFT and amplitude of pixel values. Additionally, ROI can be chosen to specifically show this plots for that region.
-
-#### analyze.ipynb
-Jupyter-notebook version of the analyze.py with the addition of having also an option to visualise optical flow.
-I recommend using this notebook for the convinience.
+Plot FFT and amplitude of pixel values. Additionally, ROI can be chosen to specifically show this plots for that region. Show optical flow.
 
 NOTE: if not already installed, `pip install jupyter` must be used.
 
@@ -86,4 +82,4 @@ NOTE: if not already installed, `pip install jupyter` must be used.
 Contains useful functions that can be used for preprocessing, analyzing, plotting, drawing and testing.
 
 ## Issues and constraints
-These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop them using analyze.py. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
+These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop the Region Of Interest using analyze.py or analyze.ipynb. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
