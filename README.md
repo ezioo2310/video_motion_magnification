@@ -9,7 +9,33 @@ I used Visual Studio Code in Windows and created & activated my environment usin
   - Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process   (*in my case this command is necessary any time I want to activate env*)
   - .venv\scripts\activate
 
-## Usage
+## Usage - analysis
+
+#### analyze.ipynb
+This script can be used both for pre-processing/analyzing and post-processing/analyzing.
+All functions from utility.py are imported and used in step-by-step fashion.
+
+*Preprocessing*:
+Since motion magnification scripts are memory demanding, the best use of this script is to load the video, convert it to grayscale, choose Region of Interest(ROI) and 
+extract the ROI footage. Show FFT and it's spatial presence within the sequence. Show optical flow.
+
+*Postprocessing*:
+Plot FFT and amplitude of pixel values. Additionally, ROI can be chosen to specifically show this plots for that region. Show optical flow.
+
+NOTE: if not already installed, `pip install jupyter` must be used.
+
+#### optical_flow.py 
+In the beginning of the script we set the parameters. If we set ```save_as_video``` to ```True```, the motion vector will be drawn on the video sequence and saved as a video. Furthermore, we can set the ```fps_output_video``` to a certain number if we want to 'slow down' the video.
+If we set ```save_as_video``` to ```False```, we will **not** save a video but rather see a plot for every frame which we can stop by pressing letter 'q'. This option can be usefull for quick glance on the motion vector.
+
+In the line 56, we choose a region of interest (ROI) by defining ```square_coords```. Then, we calculate the position vectors by applying a mean over flow values of pixels inside the ROI.
+In the line 64, we define the root of the motion vector ```start_X, start_Y```. Typically in the center of the ROI.
+In the line 67, we can manually amplify the length of the vector for visualization purposes (currently set to 30).
+
+#### utility.py
+Contains useful functions that can be used for preprocessing, analyzing, plotting, drawing and testing.
+
+##  Usage - motion magnification
 
 #### linear_based.py  
 This script was written/edited by using these repos as the source ([Repo 1](https://github.com/brycedrennan/eulerian-magnification), [Repo 2](https://github.com/flyingzhao/PyEVM)).
@@ -24,14 +50,6 @@ This script was written/edited by using this repo as the source ([Repo](https://
 Corresponding [Paper](http://people.csail.mit.edu/nwadhwa/phase-video/phase-video.pdf)
 
 Specify parameters inside the main function and run the script. 
-
-#### optical_flow.py 
-In the beginning of the script we set the parameters. If we set ```save_as_video``` to ```True```, the motion vector will be drawn on the video sequence and saved as a video. Furthermore, we can set the ```fps_output_video``` to a certain number if we want to 'slow down' the video.
-If we set ```save_as_video``` to ```False```, we will **not** save a video but rather see a plot for every frame which we can stop by pressing letter 'q'. This option can be usefull for quick glance on the motion vector.
-
-In the line 56, we choose a region of interest (ROI) by defining ```square_coords```. Then, we calculate the position vectors by applying a mean over flow values of pixels inside the ROI.
-In the line 64, we define the root of the motion vector ```start_X, start_Y```. Typically in the center of the ROI.
-In the line 67, we can manually amplify the length of the vector for visualization purposes (currently set to 30).
 
 #### learning_based
 The folder was copied from this repo ([Repo](https://github.com/cgst/motion-magnification)).
@@ -64,22 +82,6 @@ def forward(self, input: Tensor) -> Tensor:
                          #recompute_scale_factor=self.recompute_scale_factor
                          )
 ``` 
-
-#### analyze.ipynb
-This script can be used both for pre-processing/analyzing and post-processing/analyzing.
-All functions from utility.py are imported and used in step-by-step fashion.
-
-*Preprocessing*:
-Since motion magnification scripts are memory demanding, the best use of this script is to load the video, convert it to grayscale, choose Region of Interest(ROI) and 
-extract the ROI footage. Show FFT and it's spatial presence within the sequence. Show optical flow.
-
-*Postprocessing*:
-Plot FFT and amplitude of pixel values. Additionally, ROI can be chosen to specifically show this plots for that region. Show optical flow.
-
-NOTE: if not already installed, `pip install jupyter` must be used.
-
-#### utility.py
-Contains useful functions that can be used for preprocessing, analyzing, plotting, drawing and testing.
 
 ## Issues and constraints
 These motion-magnification scripts are 'optimized' for about 16 Gb of RAM memory. If we face memory problems, the best practice is to convert videos to grayscale and to crop the Region Of Interest using analyze.py or analyze.ipynb. I would say that the solution for this problem would be to code in C++ because we have more control over memory usage but in the end, if we need to store a big array of float numbers, we are always going to end up with memory issues.. 
